@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "tectonic_bridge_core_generated.h": "c",
+    "texpresso_protocol.h": "c"
+  }
+}

@@ -30,11 +30,10 @@ Makefile.config: Makefile
 ifeq ($(UNAME), Linux)
 config:
 	mkdir -p build/objects
-# LDCC: some Linux distribution build mupdf with C++ dependencies,
-	echo >Makefile.config "CFLAGS=-O2 -ggdb -I. -fPIC"
+	echo >Makefile.config "CFLAGS=-O2 -ggdb -I. -fPIC `pkg-config --cflags harfbuzz`"
 	echo >>Makefile.config 'CC=gcc $$(CFLAGS)'
 	echo >>Makefile.config 'LDCC=g++ $$(CFLAGS)'
-	echo >>Makefile.config "LIBS=-lmupdf -lm `CC=gcc ./mupdf-config.sh` -lz -ljpeg -ljbig2dec -lharfbuzz -lfreetype -lopenjp2 -lgumbo -lSDL2"
+	echo >>Makefile.config "LIBS=-lmupdf -lm `CC=gcc ./mupdf-config.sh` -lz -ljpeg -ljbig2dec -lopenjp2 -lgumbo -lSDL2 `pkg-config --libs harfbuzz freetype2`"
 endif
 
 ifeq ($(UNAME), Darwin)
@@ -42,10 +41,10 @@ BREW=$(shell brew --prefix)
 BREW_ICU4C=$(shell brew --prefix icu4c)
 config:
 	mkdir -p build/objects
-	echo >Makefile.config "CFLAGS=-O2 -ggdb -I. -fPIC -I$(BREW)/include"
+	echo >Makefile.config "CFLAGS=-O2 -ggdb -I. -fPIC -I$(BREW)/include `pkg-config --cflags harfbuzz`"
 	echo >>Makefile.config 'CC=gcc $$(CFLAGS)'
 	echo >>Makefile.config 'LDCC=g++ $$(CFLAGS)'
-	echo >>Makefile.config "LIBS=-L$(BREW)/lib -lmupdf -lm `CC=gcc ./mupdf-config.sh -L$(BREW)/lib` -lz -ljpeg -ljbig2dec -lharfbuzz -lfreetype -lopenjp2 -lSDL2"
+	echo >>Makefile.config "LIBS=-L$(BREW)/lib -lmupdf -lm `CC=gcc ./mupdf-config.sh -L$(BREW)/lib` -lz -ljpeg -ljbig2dec -lopenjp2 -lSDL2 `pkg-config --libs harfbuzz freetype2`"
 endif
 
 texpresso-xetex:

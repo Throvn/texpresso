@@ -1,26 +1,33 @@
 ## Target name
-
-XETEX_BIN?=texpresso-xetex
+XETEX_BIN?=texpresso-xetex.js
 
 ## Build configuration
+PKG=graphite2 fontconfig icu-uc
+CFLAGS = -Iinclude -Ilayout -Idpx -Istatic_libs/include $(_CFLAGS) $(_FLAGS)
+LDFLAGS = -lm -lz $(_LDFLAGS) $(_FLAGS) -s WASM=1
 
-PKG=freetype2 harfbuzz graphite2 fontconfig icu-uc libpng
-CFLAGS = -Iinclude -Ilayout -Idpx $(shell $(PKG_CONFIG) $(PKG) --cflags) $(_CFLAGS) $(_FLAGS)
-CXXFLAGS = -std=c++17 $(CFLAGS) $(_CXXFLAGS)
-LDFLAGS = -lm -lz $(shell $(PKG_CONFIG) $(PKG) --libs) $(_LDFLAGS) $(_FLAGS)
-DIRS=engine layout dpx main
+# Static linking with custom library paths (missing: ./static_libs/libfontconfig.a (not yet ported by louis))
+LDFLAGS += ./static_libs/libgraphite2.a ./static_libs/libicuuc.a ./static_libs/libfreetype.a ./static_libs/libexpat.a
+
+## FOR emscripten:
+CFLAGS += -sUSE_ZLIB=1 -sUSE_FREETYPE=1 -sUSE_HARFBUZZ=1 -sUSE_LIBPNG=1
+LDFLAGS += -sUSE_ZLIB=1 -sUSE_FREETYPE=1 -sUSE_HARFBUZZ=1 -sUSE_LIBPNG=1 -s USE_ICU=1
+
+# Enable modularization and ES6 export
+LDFLAGS += -s MODULARIZE=1 -s EXPORT_ES6=0 -s EXPORT_ALL=1
+
+# Explicitly export the main function
+EXPORTED_FUNCTIONS = ['_main']
 
 ## Build tools configuration
-
-_FLAGS?=-fsanitize=address
-_CC?=gcc
-_CXX?=g++
-_LD?=g++
-_CFLAGS?=-O0 -ggdb
-PKG_CONFIG=pkg-config
+_FLAGS?=
+_CC?=emcc
+_CXX?=em++
+_LD?=em++
+_CFLAGS?=-O2 -g
 
 ## Internal variables
-
+DIRS = dpx engine layout main
 BUILD_DIRS=../build $(patsubst %,../build/%, $(DIRS))
 
 OBJECTS ?= $(foreach dir,$(DIRS), $(patsubst %.cpp,../build/%.o, $(patsubst %.c,../build/%.o, \
@@ -29,17 +36,15 @@ OBJECTS ?= $(foreach dir,$(DIRS), $(patsubst %.cpp,../build/%.o, $(patsubst %.c,
 	)))
 
 ## Main targets
-
 all: ../build/$(XETEX_BIN)
 
 clean:
-	rm -f  $(OBJECTS)
+	rm -f $(OBJECTS)
 
 distclean:
 	rm -rf ../build
 
 ## Internal targets
-
 ../build/$(XETEX_BIN): $(OBJECTS)
 	$(_LD) $(LDFLAGS) -o $@ $^
 

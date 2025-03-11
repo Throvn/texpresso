@@ -1,12 +1,20 @@
+#include "utils.h"
 #include <dirent.h>
+#include <emscripten/stack.h>
 #include <errno.h>
-#include <execinfo.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "utils.h"
+
+// Wasm doesn't have a traditional filesystem
+// Use arbitrary number.
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 int logging = 0;
 #define BT_BUF_SIZE 100
@@ -14,36 +22,20 @@ int logging = 0;
 /**
  * @brief Prints a backtrace to stderr.
  *
- * This function captures the current call stack and prints it to the standard error output.
- * It uses the `backtrace` and `backtrace_symbols` functions to retrieve and format the stack trace.
+ * This function captures the current call stack and prints it to the standard
+ * error output. It uses the `backtrace` and `backtrace_symbols` functions to
+ * retrieve and format the stack trace.
  */
-void print_backtrace(void)
+static inline void print_callstack()
 {
-    int nptrs;
-    void *buffer[BT_BUF_SIZE];
-    char **strings;
-
-    nptrs = backtrace(buffer, BT_BUF_SIZE);
-    fprintf(stderr, "backtrace() returned %d addresses\n", nptrs);
-
-    /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
-       would produce similar output to the following: */
-
-    strings = backtrace_symbols(buffer, nptrs);
-    if (strings == NULL)
-    {
-        perror("backtrace_symbols");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int j = 0; j < nptrs; j++)
-        fprintf(stderr, "%s\n", strings[j]);
-
-    free(strings);
+  char buffer[4096];
+  printf("Backtrace to stderr: ");
+  printf("%s\n", buffer);
 }
 
 /**
- * Normalize a given file path by removing redundant slashes and trailing slashes.
+ * Normalize a given file path by removing redundant slashes and trailing
+ * slashes.
  *
  * @param path0 The input path to be normalized. This path is modified in place.
  */
@@ -54,18 +46,18 @@ static void normalize_path(char *path0)
   // Iterate over each character in the path
   while (*path)
   {
-    *index = *path; // Copy the current character to the index position
+    *index = *path;  // Copy the current character to the index position
     if (*path == '/')
       // Skip consecutive slashes
       while (path[1] == '/')
         path++;
-    index++; // Move to the next position in the index
-    path++;  // Move to the next character in the path
+    index++;  // Move to the next position in the index
+    path++;   // Move to the next character in the path
   }
   // Remove trailing slashes
   while (index > path0 && index[-1] == '/')
     index--;
-  *index = '\0'; // Null-terminate the normalized path
+  *index = '\0';  // Null-terminate the normalized path
 }
 
 /**
@@ -104,7 +96,7 @@ static bool mkdir_path(char *path, char *base)
 
   // Attempt to create the final component of the path
   if (mkdir(path, S_IRWXU) == 0 || errno == EEXIST)
-    return 1; // Success!
+    return 1;  // Success!
 
   // Log error and return
   perror("cache initialization: mkdir failed");
@@ -166,7 +158,8 @@ static int cache_base_init(void)
 }
 
 /**
- * Construct a full cache path by normalizing and creating necessary directories.
+ * Construct a full cache path by normalizing and creating necessary
+ * directories.
  *
  * @param folder The subfolder within the cache path. Can be NULL.
  * @param name The file name within the cache path. Can be NULL.
@@ -186,7 +179,7 @@ const char *cache_path_(const char *folder, const char *name[])
     baselen = cache_base_init();
 
   if (baselen < 0)
-      return NULL;
+    return NULL;
 
   // Start appending after the base
   int len = baselen;
@@ -195,7 +188,8 @@ const char *cache_path_(const char *folder, const char *name[])
   if (folder && *folder && len < sizeof(cache_path_buffer))
   {
     cache_path_buffer[len++] = '/';
-    len += snprintf(cache_path_buffer + len, sizeof(cache_path_buffer) - len, "%s", folder);
+    len += snprintf(cache_path_buffer + len, sizeof(cache_path_buffer) - len,
+                    "%s", folder);
     if (!mkdir_path(cache_path_buffer, cache_path_buffer + baselen + 1))
     {
       fprintf(stderr, "Error: cannot cache create directory %s\n",
@@ -208,17 +202,18 @@ const char *cache_path_(const char *folder, const char *name[])
   if (name && len < sizeof(cache_path_buffer))
   {
     bool delim = 0;
-    if (0) fprintf(stderr, "cache_path %s", folder);
+    if (0)
+      fprintf(stderr, "cache_path %s", folder);
     for (; *name; name++)
     {
-      if (0) fprintf(stderr, "/%s", *name);
+      if (0)
+        fprintf(stderr, "/%s", *name);
       if (*name && !delim)
       {
         cache_path_buffer[len++] = '/';
         delim = 1;
       }
-      len += snprintf(cache_path_buffer + len,
-                      sizeof(cache_path_buffer) - len,
+      len += snprintf(cache_path_buffer + len, sizeof(cache_path_buffer) - len,
                       "%s", *name);
     }
     fprintf(stderr, "\n");

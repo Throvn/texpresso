@@ -1,4 +1,4 @@
-#include <linux/limits.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,27 +131,31 @@ typedef struct
   };
 } txp_input;
 
-typedef struct {
+typedef struct
+{
   txp_file_id id;
   FILE *file;
 } txp_input_file;
 
 static txp_input *input_as_txp(ttbc_input_handle_t *h)
 {
-  if (!texpresso) abort();
+  if (!texpresso)
+    abort();
   return (void *)h;
 }
 
 static ttbc_input_handle_t *txp_as_input(txp_input *h)
 {
-  if (!texpresso) abort();
+  if (!texpresso)
+    abort();
   return (void *)h;
 }
 
-static enum txp_file_kind
-kind_of_ttbc_format(ttbc_file_format format)
+static enum txp_file_kind kind_of_ttbc_format(ttbc_file_format format)
 {
-#define CASE(x) case TTBC_FILE_FORMAT_##x: return TXP_KIND_##x
+#define CASE(x)              \
+  case TTBC_FILE_FORMAT_##x: \
+    return TXP_KIND_##x
   switch (format)
   {
     CASE(AFM);
@@ -220,7 +224,7 @@ ttbc_input_handle_t *ttstub_input_open(const char *path,
     txp_file_id id = next_id();
 
     char *path =
-      txp_open(texpresso, id, path, kind_of_ttbc_format(format), TXP_READ);
+        txp_open(texpresso, id, path, kind_of_ttbc_format(format), TXP_READ);
 
     if (!path)
       return NULL;
@@ -469,7 +473,8 @@ ssize_t ttstub_input_read(ttbc_input_handle_t *handle, char *data, size_t len)
     if (len < sizeof(input->buffer))
     {
       input->file_pos = input->file_pos + input->buf_len;
-      input->buf_len = txp_read(texpresso, input->id, input->file_pos, input->buffer, len);
+      input->buf_len =
+          txp_read(texpresso, input->id, input->file_pos, input->buffer, len);
       if (len > input->buf_len)
         len = input->buf_len;
       memmove(data, input->buffer, len);
@@ -534,17 +539,18 @@ static ttbc_output_handle_t *file_as_output(FILE *h)
 static txp_file_id output_as_txp(ttbc_output_handle_t *p)
 {
   uintptr_t h = (uintptr_t)p;
-  if (!texpresso || h > 1024) abort();
+  if (!texpresso || h > 1024)
+    abort();
   return h;
 }
 
 static ttbc_output_handle_t *txp_as_output(txp_file_id h)
 {
   uintptr_t p = h;
-  if (!texpresso) abort();
+  if (!texpresso)
+    abort();
   return (void *)p;
 }
-
 
 int ttstub_output_flush(ttbc_output_handle_t *handle)
 {
@@ -588,7 +594,8 @@ ttbc_output_handle_t *ttstub_output_open(char const *path, int is_gz)
   if (in_initex_mode && path)
   {
     const char *p = path;
-    while (*p && *p != '/') p++;
+    while (*p && *p != '/')
+      p++;
     if (!*p)
       path = format_path(path);
   }
@@ -746,12 +753,18 @@ PRINTF_FUNC(1, 2) void ttstub_issue_error(const char *format, ...)
 
 // FIXME: Implement bounds caching later
 
-int ttstub_pic_get_cached_bounds(const char *name, int type, int page, float bounds[4])
+int ttstub_pic_get_cached_bounds(const char *name,
+                                 int type,
+                                 int page,
+                                 float bounds[4])
 {
   return 0;
 }
 
-void ttstub_pic_set_cached_bounds(const char *name, int type, int page, const float bounds[4])
+void ttstub_pic_set_cached_bounds(const char *name,
+                                  int type,
+                                  int page,
+                                  const float bounds[4])
 {
 }
 

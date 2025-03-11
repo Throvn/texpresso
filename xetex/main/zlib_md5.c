@@ -1,10 +1,10 @@
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <zlib.h>
 #include "tectonic_bridge_core.h"
-#include "tectonic_bridge_flate.h"
 #include "tectonic_bridge_core_generated.h"
+#include "tectonic_bridge_flate.h"
 
 FlateResult tectonic_flate_compress(uint8_t *output_ptr,
                                     uint64_t *output_len,
@@ -16,7 +16,7 @@ FlateResult tectonic_flate_compress(uint8_t *output_ptr,
 }
 
 FlateResult tectonic_flate_decompress(uint8_t *output_ptr,
-                                      unsigned long *output_len,
+                                      uint64_t *output_len,
                                       const uint8_t *input_ptr,
                                       uint64_t input_len)
 {
@@ -34,7 +34,7 @@ void *tectonic_flate_new_decompressor(const uint8_t *input_ptr,
     return NULL;
   }
   strm->avail_in = input_len;
-  strm->next_in = (void*)input_ptr;
+  strm->next_in = (void *)input_ptr;
   return strm;
 }
 
@@ -59,9 +59,7 @@ void tectonic_flate_free_decompressor(void *handle)
 
 #include "picohash.h"
 
-int ttbc_get_data_md5(const uint8_t *data,
-                      size_t len,
-                      uint8_t *digest)
+int ttbc_get_data_md5(const uint8_t *data, size_t len, uint8_t *digest)
 {
   _picohash_md5_ctx_t ctx;
   _picohash_md5_init(&ctx);
@@ -70,17 +68,17 @@ int ttbc_get_data_md5(const uint8_t *data,
   return 1;
 }
 
-int ttstub_get_file_md5(const char *path,
-                        char *digest)
+int ttstub_get_file_md5(const char *path, char *digest)
 {
-  ttbc_input_handle_t *input = ttstub_input_open(path, TTBC_FILE_FORMAT_PROGRAM_DATA, 0);
+  ttbc_input_handle_t *input =
+      ttstub_input_open(path, TTBC_FILE_FORMAT_PROGRAM_DATA, 0);
 
   if (!input)
     return 0;
   _picohash_md5_ctx_t ctx;
   _picohash_md5_init(&ctx);
 
-  char buf [4096];
+  char buf[4096];
   size_t r;
 
   while ((r = ttstub_input_read(input, buf, 4096)) > 0)
